@@ -1,40 +1,38 @@
 from __future__ import annotations
+from dataclasses import dataclass, field
+from typing import ClassVar, List
 
 
+@dataclass
 class Animal:
-    alive: list[Animal] = []
+    name: str
+    health: int = 100
+    hidden: bool = False
 
-    def __init__(self,
-                 name: str,
-                 health: int = 100,
-                 hidden: bool = False) -> None:
-        self.name = name
-        self._health = max(0, health)
-        self.hidden = hidden
+    alive: ClassVar[List["Animal"]] = []
 
-        if self._health > 0:
+    def __post_init__(self) -> None:
+        # Normalize health
+        self.health = max(0, self.health)
+
+        if self.health > 0:
             self.__class__.alive.append(self)
 
-    # --- Health property ---
-    @property
-    def health(self) -> int:
-        return self._health
-
-    @health.setter
-    def health(self, value: int) -> None:
-        self._health = max(0, value)
-        if self._health == 0:
+    def take_damage(self, amount: int) -> None:
+        self.health = max(0, self.health - amount)
+        if self.health == 0:
             self.die()
 
-    # --- Death handling ---
     def die(self) -> None:
         if self in self.__class__.alive:
             self.__class__.alive.remove(self)
 
-    # --- Pretty print for single animal ---
     def __repr__(self) -> str:
-        return (f"{{Name: {self.name}, Health: {self.health}, "
-                f"Hidden: {self.hidden}}}")
+        return (
+            f"{{Name: {self.name}, "
+            f"Health: {self.health}, "
+            f"Hidden: {self.hidden}}}"
+        )
 
 
 class Herbivore(Animal):
@@ -45,4 +43,4 @@ class Herbivore(Animal):
 class Carnivore(Animal):
     def bite(self, animal: Animal) -> None:
         if isinstance(animal, Herbivore) and not animal.hidden:
-            animal.health -= 50
+            animal.take_damage(50)
